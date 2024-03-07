@@ -1,0 +1,482 @@
+ Table Creation:
+CREATE TABLE employees (
+  emp_id INT PRIMARY KEY, 
+  emp_name VARCHAR(30) unique, 
+  emp_mail AS (emp_name + '@awp.zm'), 
+  working_hours INT NOT NULL
+);
+CREATE TABLE emp_details (
+  emp_id INT primary key, 
+  emp_name VARCHAR(30), 
+  emp_ssn CHAR(9), 
+  emp_address VARCHAR(250), 
+  emp_country VARCHAR(7), 
+  emp_phone_country AS (
+    CASE WHEN emp_country = 'USA' THEN '+1' WHEN emp_country = 'UK' THEN '+44' WHEN emp_country = 'INDIA' THEN '+91' -- Add more mappings for other countries as needed
+    ELSE '+00' -- Default country code for unknown countries
+    END
+  ), 
+  emp_phone as CHAR(10), 
+  FOREIGN KEY (emp_id) REFERENCES employees(emp_id)
+);
+create table courses(
+  course_id int primary key, 
+  course_name varchar(30), 
+  course_length int, 
+  course_cost int
+);
+create table emp_expenses(
+  emp_id int, 
+  emp_name varchar(30), 
+  course_id int, 
+  course_completed varchar(4) check (
+    course_completed in ('yes', 'no')
+  ), 
+  FOREIGN KEY (emp_id) REFERENCES employees(emp_id), 
+  foreign key (course_id) references courses(course_id)
+);
+CREATE TABLE reimbursement (
+  emp_id INT, 
+  reimburse_id INT PRIMARY KEY, 
+  uploaded_bill VARCHAR(4) CHECK (
+    uploaded_bill IN ('yes', 'no')
+  ), 
+  type_of_bill VARCHAR(20) NOT NULL, 
+  --like wifi, stationary purchases, tech gadgets 
+  amount_reimbursing INT, 
+  FOREIGN KEY (emp_id) REFERENCES employees(emp_id)
+);
+create table candidate(
+  candidate_id int primary key, 
+  candidate_name varchar(30) not null, 
+  candidate_visa varchar(10) not null, 
+  );
+create table vendor(
+  vendor_id int primary key, 
+  vendor_name varchar(30) unique, 
+  submission_id int not null, 
+  client_id int not null, 
+  emp_id int not null, 
+  FOREIGN KEY (emp_id) REFERENCES employees(emp_id)
+);
+create table client(
+  client_id int , 
+  client_name varchar(30), 
+  vendor_id int, 
+  position_id int primary key, 
+  position_name varchar(30), 
+  FOREIGN KEY (vendor_id) REFERENCES vendor(vendor_id), 
+  );
+CREATE TABLE submission (
+  submission_id INT PRIMARY KEY, 
+  emp_id INT, 
+  candidate_id INT, 
+  vendor_id INT, 
+  position_id INT, 
+  submission_status VARCHAR(9) CHECK (
+    submission_status IN ('reject', 'onhold', 'interview')
+  ), 
+  FOREIGN KEY (emp_id) REFERENCES employees(emp_id), 
+  FOREIGN KEY (candidate_id) REFERENCES candidate(candidate_id), 
+  FOREIGN KEY (vendor_id) REFERENCES vendor(vendor_id), 
+  FOREIGN KEY (position_id) REFERENCES client(position_id)
+);
+CREATE TABLE interview (
+  interview_id INT PRIMARY KEY, 
+  submission_id INT, 
+  client_id INT, 
+  vendor_id INT, 
+  emp_id INT, 
+  candidate_id INT, 
+  interview_status VARCHAR(4) CHECK (
+    interview_status IN ('yes', 'no')
+  ), 
+  FOREIGN KEY (emp_id) REFERENCES employees(emp_id), 
+  FOREIGN KEY (candidate_id) REFERENCES candidate(candidate_id), 
+  FOREIGN KEY (vendor_id) REFERENCES vendor(vendor_id), 
+  foreign key (client_id) references client(client_id), 
+  FOREIGN KEY (submission_id) REFERENCES submission(submission_id)
+);
+
+Inserting values into employees
+INSERT INTO employees (emp_id, emp_name, working_hours) 
+VALUES 
+(1, 'John Smith', 40),
+(2, 'Alice Johnson', 35),
+(3, 'Michael Brown', 38),
+(4, 'Emily Davis', 42),
+(5, 'Daniel Martinez', 37),
+(6, 'Jessica Taylor', 40),
+(7, 'Matthew Anderson', 36),
+(8, 'Sophia Wilson', 39),
+(9, 'David Thomas', 40),
+(10, 'Olivia Garcia', 35),
+(11, 'William Lopez', 38),
+(12, 'Ava Hernandez', 41),
+(13, 'James Gonzalez', 37),
+(14, 'Emma Perez', 39),
+(15, 'Alexander Sanchez', 40),
+(16, 'Mia Scott', 37),
+(17, 'Ethan Nguyen', 38),
+(18, 'Isabella Rivera', 42),
+(19, 'Michael Lewis', 36),
+(20, 'Charlotte Walker', 40),
+(21, 'Jacob Hill', 35),
+(22, 'Amelia King', 38),
+(23, 'Benjamin Wright', 41),
+(24, 'Sophia Baker', 37),
+(25, 'Emily Green', 39),
+(26, 'Alexander Adams', 40),
+(27, 'Mia Evans', 36),
+(28, 'James Martinez', 38),
+(29, 'Ava Clark', 43),
+(30, 'William Rodriguez', 37);
+
+-- Inserting records into the emp_details table based on the top 30 records from the employee’s table:
+
+INSERT INTO emp_details (emp_id, emp_name, emp_ssn, emp_address, emp_country, emp_phone) 
+SELECT 
+    emp_id,
+    emp_name,
+    RIGHT(REPLICATE('*', 9) + CAST(emp_id AS VARCHAR(9)), 9) AS emp_ssn, -- Generating a dummy SSN using emp_id
+	(cast(emp_id as varchar(30))+'hamburg') AS emp_address, -- Example address
+    CASE 
+        WHEN emp_id <= 10 THEN 'USA'
+        WHEN emp_id <= 20 THEN 'UK'
+        ELSE 'INDIA'
+    END AS emp_country, -- Assigning country based on emp_id
+    CASE 
+        WHEN emp_id <= 10 THEN '+1' -- US phone code
+        WHEN emp_id <= 20 THEN '+44' -- UK phone code
+        ELSE '+91' -- India phone code
+    END + '123456780' AS emp_phone -- Generating dummy phone number using emp_id
+FROM employees
+
+
+Inserting records into the courses table
+INSERT INTO courses (course_id, course_name, course_length, course_cost) 
+VALUES 
+(1, 'Masters recruiting', 6, 200),
+(2, 'communication skills', 8, 300),
+(3, 'Leadership Development', 10, 400),
+(4, 'Project Management', 5, 150),
+(5, 'Data Analysis', 7, 250),
+(6, 'Presentation Skills', 6, 200),
+(7, 'Financial Planning', 8, 300);
+
+Inserting records into the emp_expenses table
+INSERT INTO emp_expenses (emp_id, emp_name, course_id, course_completed) 
+VALUES 
+(1, 'John Smith', 1, 'yes'),
+(2, 'Alice Johnson', 2, 'yes'),
+(3, 'Michael Brown', 3, 'no'),
+(4, 'Emily Davis', 4, 'yes'),
+(5, 'Daniel Martinez', 5, 'no'),
+(6, 'Jessica Taylor', 6, 'yes'),
+(7, 'Matthew Anderson', 7, 'no'),
+(8, 'Sophia Wilson', 1, 'yes'),
+(9, 'David Thomas', 2, 'no'),
+(10, 'Olivia Garcia', 3, 'yes'),
+(11, 'William Lopez', 4, 'yes'),
+(12, 'Ava Hernandez', 5, 'no'),
+(13, 'James Gonzalez', 6, 'yes'),
+(14, 'Emma Perez', 7, 'yes'),
+(15, 'Alexander Sanchez', 1, 'no');
+
+
+Inserting records into the candidate table
+INSERT INTO candidate (candidate_id, candidate_name, candidate_visa) 
+VALUES 
+-- 10 records for each visa type
+(01, 'John Doe', 'OPT'),
+(02, 'Alice Smith', 'OPT'),
+(03, 'Michael Johnson', 'OPT'),
+(4, 'Emily Brown', 'OPT'),
+(5, 'Daniel Martinez', 'OPT'),
+(6, 'Jessica Taylor', 'OPT'),
+(7, 'Matthew Anderson', 'OPT'),
+(8, 'Sophia Wilson', 'OPT'),
+(9, 'David Thomas', 'OPT'),
+(10, 'Olivia Garcia', 'OPT'),
+(11, 'William Lopez', 'Stem OPT'),
+(12, 'Ava Hernandez', 'Stem OPT'),
+(13, 'James Gonzalez', 'Stem OPT'),
+(14, 'Emma Perez', 'Stem OPT'),
+(15, 'Alexander Sanchez', 'Stem OPT'),
+(16, 'Mia Scott', 'Stem OPT'),
+(17, 'Ethan Nguyen', 'Stem OPT'),
+(18, 'Isabella Rivera', 'Stem OPT'),
+(19, 'Michael Lewis', 'Stem OPT'),
+(20, 'Charlotte Walker', 'Stem OPT'),
+(21, 'Jacob Hill', 'GC'),
+(22, 'Amelia King', 'GC'),
+(23, 'Benjamin Wright', 'GC'),
+(24, 'Sophia Baker', 'GC'),
+(25, 'Emily Green', 'GC'),
+(26, 'Alexander Adams', 'GC'),
+(27, 'Mia Evans', 'GC'),
+(28, 'James Martinez', 'GC'),
+(29, 'Ava Clark', 'GC'),
+(30, 'William Rodriguez', 'GC'),
+(31, 'Sophia Lee', 'H1B'),
+(32, 'Lucas Hall', 'H1B'),
+(33, 'Chloe Cooper', 'H1B'),
+(34, 'Jackson Wright', 'H1B'),
+(35, 'Avery Scott', 'H1B'),
+(36, 'Grace Mitchell', 'H1B'),
+(37, 'Logan Carter', 'H1B'),
+(38, 'Ella Hill', 'H1B'),
+(39, 'Sebastian Martinez', 'H1B'),
+(40, 'Zoe Perez', 'H1B'),
+(41, 'Liam Turner', 'L1'),
+(42, 'Luna Moore', 'L1'),
+(43, 'Henry Reed', 'L1'),
+(44, 'Mila Phillips', 'L1'),
+(45, 'Owen Torres', 'L1'),
+(46, 'Scarlett Flores', 'L1'),
+(47, 'Nathan Diaz', 'L1'),
+(48, 'Lily Gray', 'L1'),
+(49, 'Elijah Russell', 'L1'),
+(50, 'Aria Bryant', 'L1'),
+(51, 'Ethan Morgan', 'H4'),
+(52, 'Victoria Butler', 'H4'),
+(53, 'Jackson Adams', 'H4'),
+(54, 'Penelope Fisher', 'H4'),
+(55, 'Gabriel Hayes', 'H4'),
+(56, 'Madison Patel', 'H4'),
+(57, 'Grayson Ross', 'H4'),
+(58, 'Layla Simmons', 'H4'),
+(59, 'Christopher Wood', 'H4'),
+(60, 'Hannah Price', 'H4');
+
+
+Inserting records into the vendor table
+INSERT INTO vendor (vendor_id, vendor_name) 
+VALUES 
+(1000, 'ABC Company'),
+(2000, 'XYZ Solutions'),
+(3000, 'Tech Innovations Inc.'),
+(4000, 'Global Tech Services'),
+(5000, 'Bright Minds Consulting'),
+(6000, 'Future Systems Corporation'),
+(7000, 'Dynamic Solutions Ltd.'),
+(8000, 'Strategic Partners Inc.'),
+(9000, 'Innovative Ideas Group');
+
+
+Inserting records into the client table
+INSERT INTO client (client_id, client_name, position_id, position_name) 
+VALUES 
+-- Apple
+(1000, 'Apple', 1111, 'Software Engineer'),
+(1000, 'Apple', 1112, 'Data Scientist'),
+(1000, 'Apple', 1113, 'UX/UI Designer'),
+(1000, 'Apple', 1114, 'Product Manager'),
+
+-- Google
+(2000, 'Google', 1115, 'Software Engineer'),
+(2000, 'Google', 1116, 'Data Scientist'),
+(2000, 'Google', 1117, 'UX/UI Designer'),
+(2000, 'Google', 1118, 'Product Manager'),
+
+-- Microsoft
+(3000, 'Microsoft', 1119, 'Software Engineer'),
+(3000, 'Microsoft', 1120, 'Data Scientist'),
+(3000, 'Microsoft', 1121, 'UX/UI Designer'),
+(3000, 'Microsoft', 1122, 'Product Manager'),
+
+-- Dell
+(4000, 'Dell', 1123, 'Software Engineer'),
+(4000, 'Dell', 1124, 'Data Scientist'),
+(4000, 'Dell', 1125, 'UX/UI Designer'),
+(4000, 'Dell', 1126, 'Product Manager'),
+
+-- Samsung
+(5000, 'Samsung', 1127, 'Software Engineer'),
+(5000, 'Samsung', 1128, 'Data Scientist'),
+(5000, 'Samsung', 1129, 'UX/UI Designer'),
+(5000, 'Samsung', 1130, 'Product Manager');
+
+
+    
+Inserting records into the reimbursement table
+
+INSERT INTO reimbursement (emp_id, reimburse_id, uploaded_bill, type_of_bill, amount_reimbursing) 
+SELECT 
+    e.emp_id,
+    ROW_NUMBER() OVER (ORDER BY e.emp_id)*100 AS reimburse_id, 
+	case 
+	when e.emp_id%2!=0 then 'yes'
+	else 'no'
+	end as uploaded_bill,
+    CASE 
+        WHEN e.emp_id%3!=0 THEN 'WIFI'
+		WHEN e.emp_id%4!=0 THEN 'Tech Stack'
+		WHEN e.emp_id%5!=0 THEN 'Stationary'
+        ELSE 'Others'
+    END AS type_of_bill,
+    CASE 
+        WHEN e.emp_id <= 10 THEN ROUND(RAND(210) * 260, 3)-- Random amount up to 200 for the first 10 employees
+		WHEN e.emp_id <= 20 THEN ROUND(RAND(300) * 390, 3) 
+        ELSE ROUND(RAND(500) * 750, 3) -- Random amount up to 300 for the rest of the employees
+    END AS amount_reimbursing
+FROM 
+    employees e
+
+
+
+
+INSERT INTO submission (submission_id, emp_id, candidate_id, vendor_id, position_id, submission_status)
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY NEWID()) AS submission_id,
+    (ABS(CHECKSUM(NEWID())) % 30) + 1 AS emp_id,
+    (ABS(CHECKSUM(NEWID())) % 60) + 1 AS candidate_id,
+    ((ABS(CHECKSUM(NEWID())) % 9) + 1) * 1000 AS vendor_id,
+    (ABS(CHECKSUM(NEWID())) % 20) + 1111 AS position_id,
+	CASE 
+    WHEN EXISTS (
+        SELECT 1 
+        FROM submission s -- Replace with your actual table name
+        WHERE candidate_id = s.candidate_id
+        AND submission_status = 'interview'
+    ) THEN 'reject' -- Set submission_status to 'reject' if candidate already has 'interview' status
+    WHEN (ABS(CHECKSUM(NEWID())) % 10) < 1 THEN 'interview' -- Generate 'interview' status with 10% probability
+    ELSE 'reject' -- Default to 'reject' status
+END AS submission_status
+
+FROM 
+    sys.objects AS o1
+CROSS JOIN 
+    sys.objects AS o2
+ORDER BY (SELECT NULL)
+OFFSET 0 ROWS FETCH NEXT 2000 ROWS ONLY;
+
+
+
+
+
+INSERT INTO interview (interview_id, submission_id, interview_status)
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY NEWID()) AS interview_id,
+    s.submission_id,
+    CASE 
+        WHEN s.submission_status = 'interview' AND ROW_NUMBER() OVER (PARTITION BY s.position_id ORDER BY NEWID()) = 1 THEN 'yes'
+        ELSE 'no'
+    END AS interview_status
+FROM 
+    (SELECT submission_id, position_id, submission_status 
+     FROM submission 
+     WHERE submission_status = 'interview') AS s
+JOIN 
+    (SELECT DISTINCT position_id FROM client) AS c
+ON 
+    s.position_id = c.position_id;
+
+ 
+
+View data analytics :
+
+create view applicantsPerPositions as ( SELECT 
+    COUNT(s.candidate_id) AS Applicants,
+    s.position_id,
+    c.position_name
+FROM 
+    [TECHREC].[dbo].[submission] s
+JOIN 
+    [TECHREC].[dbo].[client] c ON s.position_id = c.position_id
+WHERE 
+    s.submission_status = 'interview'
+GROUP BY 
+    GROUPING SETS ((s.position_id, c.position_name),())
+)
+
+
+Functions:
+
+
+CREATE FUNCTION CheckCandidateApplication (@candidate_id int, @position_id int)
+RETURNS varchar(5)
+AS
+BEGIN
+    DECLARE @result varchar(5);
+
+    -- Check if the candidate applied to the specified position
+    SET @result = (
+        SELECT
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM [TECHREC].[dbo].[submission]
+                    WHERE candidate_id = @candidate_id
+                    AND position_id = @position_id
+                ) THEN 'Yes'
+                ELSE 'No'
+            END 
+    );
+
+    RETURN @result;
+END;
+
+Views: idhpid + hourly Pay
+create view idhp as (SELECT 
+        emp_id,
+        CASE 
+            WHEN emp_country = 'INDIA' THEN 5.47
+            WHEN emp_country = 'USA' THEN 13.99
+            ELSE 13.32
+        END AS hourly_pay
+    FROM 
+        emp_details
+
+
+create view salary_attributes as 
+WITH incentives AS (
+    SELECT 
+        emp_id,
+        CASE 
+            WHEN emp_country = 'INDIA' THEN 5.47
+            WHEN emp_country = 'USA' THEN 13.99
+            ELSE 13.32
+        END AS hourly_pay
+    FROM 
+        emp_details
+),
+emp_expense AS (
+    SELECT 
+        e.emp_id,
+        COALESCE(c.course_cost, 0) AS course_cost
+    FROM 
+        emp_expenses e 
+    LEFT JOIN 
+        courses c ON e.course_id = c.course_id 
+    WHERE 
+        e.course_completed = 'yes'
+)
+
+SELECT 
+    sub.emp_id,
+    COUNT(sub.submission_id) AS No_of_submission,
+    COUNT(CASE WHEN sub.submission_status = 'interview' THEN sub.submission_id END) AS No_of_interviews,
+    COUNT(CASE WHEN i.interview_status = 'yes' THEN i.submission_id END) AS candidates_placed,
+    (COUNT(sub.submission_id) * 0.1 * hourly_pay) +
+    (COUNT(CASE WHEN sub.submission_status = 'interview' THEN sub.submission_id END) * 0.5 * hourly_pay)  +
+    (COUNT(CASE WHEN i.interview_status = 'yes' THEN i.submission_id END) * hourly_pay) AS Incentives,
+    emp.working_hours * hourly_pay as base_pay,
+    r.amount_reimbursing, 
+    r.type_of_bill,
+     COALESCE(ee.course_cost, 0) AS course_reimbursement
+FROM 
+    submission sub
+LEFT JOIN 
+    incentives ON sub.emp_id = incentives.emp_id
+LEFT JOIN 
+    interview i ON sub.submission_id = i.submission_id
+LEFT JOIN 
+    employees emp ON sub.emp_id = emp.emp_id
+LEFT JOIN 
+    reimbursement r ON sub.emp_id = r.emp_id
+LEFT JOIN 
+    emp_expense ee ON sub.emp_id = ee.emp_id
+GROUP BY 
+    sub.emp_id, hourly_pay, emp.working_hours, r.amount_reimbursing, r.type_of_bill, ee.course_cost;
+
